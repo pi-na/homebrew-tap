@@ -483,23 +483,6 @@ class App:
                 L.append((f"    {ln}", 0))
 
         block("FIRST PROMPT", d["first_prompt"] or "", 2)
-        tools = " · ".join(f"{k} {v}" for k, v in d["tools"].most_common(8))
-        block("TOOLS", tools or "", 2)
-        def short(x):
-            # session scratchpads live under a long private tmp prefix
-            if "/scratchpad/" in x:
-                return "<scratch>/" + x.split("/scratchpad/", 1)[1]
-            return x.replace(home, "~")
-
-        files = sorted(short(x) for x in d["files"])
-        L.append(("", 0))
-        L.append((f"  FILES TOUCHED ({len(files)})", U | B))
-        for f in files[:8]:
-            L.append((f"    {f}", 0))
-        if len(files) > 8:
-            L.append((f"    … {len(files) - 8} more", D))
-        if not files:
-            L.append(("    -", D))
         msgs = list(d["msgs"])
         L.append(("", 0))
         L.append((f"  LAST {len(msgs)} MESSAGES  (j/k or arrows to scroll)", U | B))

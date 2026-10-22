@@ -45,8 +45,8 @@ instead of opening the UI, so it works in scripts and cron.
 ## The focus view
 
 Shows the directory, git branch, model, reasoning effort, permission mode,
-Claude Code version, duration, message counts, token usage, tools used, files
-touched, subagent count and the last 10 messages of the conversation.
+Claude Code version, duration, message counts, token usage, subagent count and
+the last 10 messages of the conversation.
 
 The transcript is only fully parsed for the session you open, so the listing
 stays fast even with hundreds of megabytes of history.
