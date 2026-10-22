@@ -3,8 +3,8 @@ class ClaudeSessions < Formula
 
   desc "Browse and resume Claude Code sessions"
   homepage "https://github.com/pi-na/homebrew-tap"
-  url "https://github.com/pi-na/homebrew-tap/archive/refs/tags/v0.1.1.tar.gz"
-  sha256 "e25e33c7c56c03c269b5960d3bf603019cc9284b6d5a7324ca8076985077426f"
+  url "https://github.com/pi-na/homebrew-tap/archive/refs/tags/v0.1.2.tar.gz"
+  sha256 "b017bd4cddb858fb99441577c55e092cc4319cc99ae9e397442ed7e8ad0de1c7"
   license "MIT"
 
   depends_on :macos
