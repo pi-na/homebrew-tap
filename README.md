@@ -16,9 +16,9 @@ brew install pi-na/tap/claude-sessions
 ## Use
 
 ```sh
-claude-sessions          # sessions for the current directory
-claude-sessions <dir>    # sessions for that directory
-claude-sessions --all    # every session, with its directory
+claude-sessions          # every session, with its directory
+claude-sessions .        # only the current directory
+claude-sessions <dir>    # only that directory
 ```
 
 Piping is supported: if stdout is not a terminal it prints a flat listing

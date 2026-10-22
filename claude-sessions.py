@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """claude-sessions - browse and resume Claude Code sessions.
 
+Starts listing every session. Pass a directory (or ".") to scope it.
+
 Interactive when stdout is a terminal; otherwise prints a flat listing
 (for pipes, scripts and cron).
 """
@@ -726,9 +728,9 @@ def main():
         print(__doc__)
         print(HELP)
         return
-    show_all = "--all" in argv
+    # no argument means every directory; pass a path (or ".") to scope it
     rest = [a for a in argv if not a.startswith("-")]
-    target = None if show_all else (rest[0] if rest else os.getcwd())
+    target = rest[0] if rest else None
 
     if not sys.stdout.isatty():
         plain(target)
