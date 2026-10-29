@@ -46,13 +46,19 @@ git -C "$(brew --repo pi-na/tap)" pull && brew upgrade claude-sessions
 ## Testing
 
 ```sh
-pip install pyte                                        # test-only dependency
-python3 tests/test_screen.py                            # tests this repo's file
-CS_BIN=$(which claude-sessions) python3 tests/test_screen.py   # tests the installed binary
+python3 -m venv .venv && .venv/bin/pip install pyte     # test-only dependency
+.venv/bin/python tests/test_data.py                     # data layer, against the real store
+.venv/bin/python tests/test_screen.py                   # the UI, on a pty
+CS_BIN=$(which claude-sessions) .venv/bin/python tests/test_screen.py   # the installed binary
 ```
 
-The suite spawns the program on a pty, feeds keystrokes, and asserts on the
-screen as rendered by a terminal emulator.
+`test_screen.py` spawns the program on a pty, feeds keystrokes, and asserts on
+the screen as rendered by a terminal emulator. `test_data.py` checks the
+invariants of the session store.
+
+Neither suite may hardcode how many sessions exist. Claude Code deletes old
+transcripts on its own schedule, so the total changes under you; read it off
+the screen and compare against that.
 
 **Do not assert on the raw pty byte stream.** ncurses only emits the diff
 against the previous frame, so a string that is plainly visible on screen often
@@ -68,8 +74,17 @@ Sessions are JSONL files under `~/.claude/projects/<encoded-cwd>/<id>.jsonl`,
 where the directory name is the absolute cwd with every non-alphanumeric
 character replaced by `-`.
 
-- That encoding is **lossy**, so always read the `cwd` field inside the file
-  rather than decoding the folder name.
+- That encoding is **lossy**, so the folder name cannot be decoded back into a
+  path.
+- **`cwd` moves within a session.** Every event carries its own, and it changes
+  whenever a tool `cd`s, so the first one is not necessarily where the session
+  started. 22 of 47 transcripts in one real store recorded more than one, and
+  two of them reported a first `cwd` that was not the launch directory at all.
+  Getting this wrong is not cosmetic: the printed `cd ... && claude --resume`
+  lands in a directory where Claude Code cannot find the session, and it fails
+  silently. `Session._launch_dir()` resolves it by scanning every recorded
+  `cwd` and taking the one that encodes to the project folder the file lives
+  in. `tests/test_data.py` guards that invariant.
 - **Timestamps are UTC**; the UI converts to local time.
 - **The file mtime lies** — Claude Code touches it on exit and when indexing.
   Ordering by "last used" must use the last `timestamp` in the transcript.

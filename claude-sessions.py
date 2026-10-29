@@ -29,14 +29,14 @@ TAIL_MSGS = 10    # messages kept for the focus view
 # ---------------------------------------------------------------- data
 
 class Session:
-    __slots__ = ("sid", "path", "cwd", "last", "title", "nmsg", "size",
-                 "_detail")
+    __slots__ = ("sid", "path", "cwd", "real", "last", "title", "nmsg",
+                 "size", "_detail")
 
     def __init__(self, path):
         self.path = path
         self.sid = os.path.basename(path)[:-6]
         self.size = os.path.getsize(path)
-        self.cwd = self.last = self.title = None
+        self.cwd = self.real = self.last = self.title = None
         self.nmsg = 0
         self._detail = None
         self._scan()
@@ -46,6 +46,8 @@ class Session:
             blob = fh.read()
         # user messages: cheap count, no JSON parsing
         self.nmsg = blob.count(b'"type":"user"')
+        self.cwd = self._launch_dir(blob)
+        self.real = os.path.realpath(self.cwd) if self.cwd else None
         lines = blob.splitlines()
         first = None
         ai = None
@@ -53,8 +55,6 @@ class Session:
             d = _loads(raw)
             if not d:
                 continue
-            if not self.cwd and d.get("cwd"):
-                self.cwd = d["cwd"]
             if d.get("customTitle"):
                 self.title = d["customTitle"]
             if d.get("aiTitle"):
@@ -74,10 +74,29 @@ class Session:
                 self.title = d["customTitle"]
             if d.get("aiTitle"):
                 ai = d["aiTitle"]
-            if not self.cwd and d.get("cwd"):
-                self.cwd = d["cwd"]
         # /rename beats Claude's own auto-title, which beats the first prompt
         self.title = self.title or ai or first or "(no text)"
+
+    def _launch_dir(self, blob):
+        """The directory the session was started in.
+
+        Every event carries its own 'cwd', and it moves whenever a tool cds,
+        so the first one is not necessarily where the session began. The
+        authoritative answer is the project folder this file lives in, so pick
+        the recorded cwd that encodes to that folder name.
+        """
+        folder = os.path.basename(os.path.dirname(self.path))
+        fallback = None
+        for mo in re.finditer(rb'"cwd":"((?:[^"\\]|\\.)*)"', blob):
+            try:
+                c = json.loads(b'"' + mo.group(1) + b'"')
+            except Exception:
+                continue
+            if slug(c) == folder:
+                return c
+            if fallback is None:
+                fallback = c
+        return fallback
 
     @property
     def when(self):
@@ -206,9 +225,13 @@ def span(a, b):
     return f"{secs // 3600}h {secs % 3600 // 60:02d}m"
 
 
-def encode(path):
+def slug(path):
     """Claude Code encodes the cwd replacing every non-alphanumeric with '-'."""
-    return re.sub(r"[^a-zA-Z0-9]", "-", os.path.realpath(os.path.expanduser(path)))
+    return re.sub(r"[^a-zA-Z0-9]", "-", path)
+
+
+def encode(path):
+    return slug(os.path.realpath(os.path.expanduser(path)))
 
 
 def load(target):
@@ -333,7 +356,7 @@ class App:
             rows = self.all
         else:
             want = os.path.realpath(os.path.expanduser(self.target))
-            rows = [s for s in self.all if s.cwd == want]
+            rows = [s for s in self.all if s.real == want]
         if self.filter:
             # every token must match; ties keep the base order (recency)
             # because sort() is stable

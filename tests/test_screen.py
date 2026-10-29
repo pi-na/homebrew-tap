@@ -48,6 +48,8 @@ def check(label, cond, extra=""):
 time.sleep(2.2)
 sc = shot()
 print("1) tabla inicial")
+TOTAL = next((l.strip().split()[0] for l in sc if "session(s)" in l), None)
+print(f"   (el store tiene {TOTAL} sesiones)")
 check("header ALL DIRECTORIES", any("ALL DIRECTORIES" in l for l in sc))
 check("columnas en ingles", any("LAST USED" in l and "MSGS" in l for l in sc))
 check("pie con q quit", any("q quit" in l for l in sc))
@@ -73,11 +75,11 @@ check("pie dice 'a (toggle) list all'", any("a (toggle) list all" in l for l in 
 print("4) fuzzy + esc")
 send(b"/", b"k", b"l", b"e", b"e"); sc = shot()
 check("prompt fuzzy visible", any("fuzzy: klee" in l for l in sc), repr(sc[-1]))
-check("filtro aplicado (pocas filas)", any("session(s)" in l and not l.strip().startswith("47") for l in sc),
+check("filtro aplicado (pocas filas)", any("session(s)" in l and not l.strip().startswith(TOTAL) for l in sc),
       " | ".join(l for l in sc if "session(s)" in l))
 send(b"\x1b"); sc = shot()
 check("esc sale del buscador", any("search cancelled" in l for l in sc), repr(sc[-1]))
-check("lista restaurada a 47", any("47 session(s)" in l for l in sc),
+check("lista restaurada al total", any(f"{TOTAL} session(s)" in l for l in sc),
       " | ".join(l for l in sc if "session(s)" in l))
 
 print("5) enter -> vista foco")
